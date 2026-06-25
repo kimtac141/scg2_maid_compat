@@ -1,0 +1,23 @@
+{
+  "task.scg2_maid_compat.gun_attack": "Gunner",
+  "task.scg2_maid_compat.gun_attack.desc": "Uses Scorched Guns 2 firearms to attack enemies",
+  "task.scg2_maid_compat.gun_attack.condition.has_scg2_gun": "Holding a gun",
+  "chat_bubble.scg2_maid_compat.reload.0": "Hang on, reloading~",
+  "chat_bubble.scg2_maid_compat.reload.1": "Reloading, give me a sec~",
+  "chat_bubble.scg2_maid_compat.reload.2": "Almost done~",
+  "task.scg2_maid_compat.grenade_attack": "Grenadier",
+  "task.scg2_maid_compat.grenade_attack.desc": "Uses Scorched Guns 2 grenades to attack enemies",
+  "task.scg2_maid_compat.grenade_attack.condition.has_scg2_grenade": "Holding a grenade",
+  "chat_bubble.scg2_maid_compat.wrong_item_grenade": "Give me a grenade! I can't use this!",
+  "chat_bubble.scg2_maid_compat.no_ammo.0": "I'm out of ammo!",
+  "chat_bubble.scg2_maid_compat.no_ammo.1": "My ammo's all gone!",
+  "chat_bubble.scg2_maid_compat.no_ammo.2": "I've got no spare ammo!",
+  "chat_bubble.scg2_maid_compat.no_ammo.3": "All out, gimme some~",
+  "chat_bubble.scg2_maid_compat.spot.0": "Enemy spotted!",
+  "chat_bubble.scg2_maid_compat.spot.1": "Target acquired!",
+  "chat_bubble.scg2_maid_compat.spot.2": "Got one in my sights!",
+  "chat_bubble.scg2_maid_compat.fire.0": "Take this!",
+  "chat_bubble.scg2_maid_compat.fire.1": "Eat lead!",
+  "chat_bubble.scg2_maid_compat.fire.2": "Say hello to my little friend!",
+  "chat_bubble.scg2_maid_compat.fire.3": "Bam!"
+}

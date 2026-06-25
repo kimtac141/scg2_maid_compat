@@ -1,0 +1,23 @@
+{
+  "task.scg2_maid_compat.gun_attack": "枪手",
+  "task.scg2_maid_compat.gun_attack.desc": "使用 Scorched Guns 2 的枪械攻击敌人",
+  "task.scg2_maid_compat.gun_attack.condition.has_scg2_gun": "持有枪械",
+  "chat_bubble.scg2_maid_compat.reload.0": "稍等，我在换弹~",
+  "chat_bubble.scg2_maid_compat.reload.1": "换弹中，稍等一下哦~",
+  "chat_bubble.scg2_maid_compat.reload.2": "马上就好~",
+  "task.scg2_maid_compat.grenade_attack": "掷弹兵",
+  "task.scg2_maid_compat.grenade_attack.desc": "使用 Scorched Guns 2 的手榴弹攻击敌人",
+  "task.scg2_maid_compat.grenade_attack.condition.has_scg2_grenade": "持有手榴弹",
+  "chat_bubble.scg2_maid_compat.wrong_item_grenade": "给我手榴弹！这个我用不了！",
+  "chat_bubble.scg2_maid_compat.no_ammo.0": "我没弹药了！",
+  "chat_bubble.scg2_maid_compat.no_ammo.1": "我的弹药打空了！",
+  "chat_bubble.scg2_maid_compat.no_ammo.2": "我没有备弹了！",
+  "chat_bubble.scg2_maid_compat.no_ammo.3": "弹药用完啦，快给我一点~",
+  "chat_bubble.scg2_maid_compat.spot.0": "发现敌人！",
+  "chat_bubble.scg2_maid_compat.spot.1": "找到目标了！",
+  "chat_bubble.scg2_maid_compat.spot.2": "锁定你了！",
+  "chat_bubble.scg2_maid_compat.fire.0": "吃我一枪！",
+  "chat_bubble.scg2_maid_compat.fire.1": "尝尝子弹的滋味！",
+  "chat_bubble.scg2_maid_compat.fire.2": "接招吧！",
+  "chat_bubble.scg2_maid_compat.fire.3": "砰！"
+}
