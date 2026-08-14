@@ -647,6 +647,10 @@ public final class SC2GunCompat {
     }
 
     private static void spawnCasing(LivingEntity entity, ItemStack gun, GunItem gunItem, int count) {
+        if (SCG2TLMConfig.RELOAD_FREE_AMMO.get()) {
+            return;
+        }
+
         Item ammoType = getProjectileItem(gun, gunItem);
         if (ammoType == null || isSingleReloadAmmo(ammoType)) {
             return;
