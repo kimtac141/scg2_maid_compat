@@ -21,12 +21,21 @@ build
 eclipse
 run
 
-# Files from Forge MDK
-forge*changelog.txt
-
 # Build artifacts
 *.jar
 *.log
+build_out*.txt
+build_err*.txt
+build_new.txt
+hs_err_pid*.log
+replay_pid*.log
+
+# Windows artifacts
+nul
+-p
+
+# Dev scratch
+gun_bytecode.txt
 
 # OS
 Thumbs.db

@@ -1,6 +1,7 @@
 package com.scg2tlm.elmomod.compat.task;
 
 import com.scg2tlm.elmomod.ExampleMod;
+import com.scg2tlm.elmomod.SCG2TLMConfig;
 import com.scg2tlm.elmomod.compat.SC2GunCompat;
 import com.github.tartaricacid.touhoulittlemaid.api.task.IRangedAttackTask;
 import com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid;
@@ -60,7 +61,7 @@ public class TaskSC2GrenadeAttack implements IRangedAttackTask {
     @Override
     public List<Pair<Integer, BehaviorControl<? super EntityMaid>>> createBrainTasks(EntityMaid maid) {
         BehaviorControl<EntityMaid> findTarget = StartAttacking.create(
-                m -> !cannotFight(m), TaskSC2GrenadeAttack::findValidTarget);
+                m -> !m.isMaidInSittingPose() && !cannotFight(m), TaskSC2GrenadeAttack::findValidTarget);
         Predicate<LivingEntity> shouldStopTarget = target ->
                 target instanceof SulfurheadEntity || maid.isMaidInSittingPose()
                         || cannotFight(maid) || farAway(target, maid);
@@ -85,7 +86,7 @@ public class TaskSC2GrenadeAttack implements IRangedAttackTask {
     @Override
     public List<Pair<Integer, BehaviorControl<? super EntityMaid>>> createRideBrainTasks(EntityMaid maid) {
         BehaviorControl<EntityMaid> findTarget = StartAttacking.create(
-                m -> !cannotFight(m), TaskSC2GrenadeAttack::findValidTarget);
+                m -> !m.isMaidInSittingPose() && !cannotFight(m), TaskSC2GrenadeAttack::findValidTarget);
         Predicate<LivingEntity> shouldStopTarget = target ->
                 target instanceof SulfurheadEntity || maid.isMaidInSittingPose()
                         || cannotFight(maid) || farAway(target, maid);
@@ -132,7 +133,7 @@ public class TaskSC2GrenadeAttack implements IRangedAttackTask {
 
     @Override
     public float searchRadius(EntityMaid maid) {
-        return 24.0f;
+        return SCG2TLMConfig.GRENADE_RADIUS.get().floatValue();
     }
 
     @Override

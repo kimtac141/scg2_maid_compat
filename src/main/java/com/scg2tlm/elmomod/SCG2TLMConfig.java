@@ -18,6 +18,9 @@ public class SCG2TLMConfig {
 
     public static final ForgeConfigSpec.DoubleValue MELEE_RANGE;
     public static final ForgeConfigSpec.DoubleValue MELEE_SPEED;
+    public static final ForgeConfigSpec.BooleanValue BAYONET_MELEE;
+
+    public static final ForgeConfigSpec.BooleanValue RELOAD_FREE_AMMO;
 
     public static final ForgeConfigSpec.DoubleValue SNIPER_SEARCH_RADIUS;
     public static final ForgeConfigSpec.DoubleValue RIFLE_MAGNUM_SEARCH_RADIUS;
@@ -26,8 +29,8 @@ public class SCG2TLMConfig {
     static {
         BUILDER.push("combat");
 
-        BUILDER.comment("Accuracy spread for maid gun attacks (lower = more accurate)");
-        GUN_ACCURACY = BUILDER.defineInRange("gun_accuracy", 2.0, 0.0, 20.0);
+        BUILDER.comment("Accuracy for maid gun attacks (higher = more accurate). Spread = 5 * difficulty / this_value.");
+        GUN_ACCURACY = BUILDER.defineInRange("gun_accuracy", 3.5, 0.0, 20.0);
 
         BUILDER.comment("Default gun engagement range in blocks");
         GUN_RANGE = BUILDER.defineInRange("gun_range", 64.0, 8.0, 256.0);
@@ -46,6 +49,15 @@ public class SCG2TLMConfig {
 
         BUILDER.comment("Movement speed multiplier when closing for melee");
         MELEE_SPEED = BUILDER.defineInRange("melee_speed", 0.8, 0.1, 2.0);
+
+        BUILDER.comment("When enabled, maids with a bayonet-equipped gun perform bayonet melee attacks with animation when the target is in arm's reach");
+        BAYONET_MELEE = BUILDER.define("bayonet_melee", true);
+
+        BUILDER.pop();
+        BUILDER.push("reload");
+
+        BUILDER.comment("When enabled, maid reloads do not consume backpack ammo and ignore the need for ammo entirely");
+        RELOAD_FREE_AMMO = BUILDER.define("reload_free_ammo", false);
 
         BUILDER.pop();
         BUILDER.push("search_radii");

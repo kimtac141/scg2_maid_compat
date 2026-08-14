@@ -1,0 +1,32 @@
+{
+  "criteria": {
+    "maid_event": {
+      "conditions": {
+        "event": "scg2_reload_ding"
+      },
+      "trigger": "touhou_little_maid:maid/tamed_maid"
+    }
+  },
+  "display": {
+    "announce_to_chat": true,
+    "description": {
+      "translate": "advancements.scg2_maid_compat.scg2_reload_ding.description"
+    },
+    "frame": "task",
+    "hidden": true,
+    "icon": {
+      "item": "scguns:grandle"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.scg2_maid_compat.scg2_reload_ding.title"
+    }
+  },
+  "parent": "scg2_maid_compat:scg2_first_shot",
+  "requirements": [
+    [
+      "maid_event"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

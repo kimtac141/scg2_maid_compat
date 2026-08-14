@@ -6,11 +6,13 @@ import com.google.common.collect.ImmutableMap;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.behavior.Behavior;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.ai.behavior.BehaviorUtils;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.memory.MemoryStatus;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.util.Mth;
+
+import java.util.Optional;
 
 public class SC2GunStrafingTask extends Behavior<EntityMaid> {
     private boolean strafingClockwise;
@@ -23,15 +25,23 @@ public class SC2GunStrafingTask extends Behavior<EntityMaid> {
                 MemoryModuleType.LOOK_TARGET, MemoryStatus.REGISTERED,
                 MemoryModuleType.ATTACK_TARGET, MemoryStatus.VALUE_PRESENT,
                 MemoryModuleType.NEAREST_VISIBLE_LIVING_ENTITIES, MemoryStatus.VALUE_PRESENT
-        ), 1200);
+        ), 200);
     }
 
     @Override
     protected boolean checkExtraStartConditions(ServerLevel level, EntityMaid maid) {
-        if (maid.isMaidInSittingPose()) return false;
-        if (!SC2GunCompat.isSC2Gun(maid.getMainHandItem())) return false;
-        return maid.getBrain().getMemory(MemoryModuleType.ATTACK_TARGET)
-                .filter(t -> maid.canSee(t)).isPresent();
+        if (maid.isMaidInSittingPose() || maid.isPassenger()) return false;
+        ItemStack gun = maid.getMainHandItem();
+        if (!SC2GunCompat.isSC2Gun(gun)) return false;
+        Optional<LivingEntity> target = maid.getBrain().getMemory(MemoryModuleType.ATTACK_TARGET);
+        if (target.isEmpty() || !target.get().isAlive() || target.get().isRemoved()) {
+            if (target.isPresent() && (!target.get().isAlive() || target.get().isRemoved())) {
+                maid.getBrain().eraseMemory(MemoryModuleType.ATTACK_TARGET);
+                maid.setTarget(null);
+            }
+            return false;
+        }
+        return maid.canSee(target.get());
     }
 
     @Override
@@ -41,7 +51,9 @@ public class SC2GunStrafingTask extends Behavior<EntityMaid> {
 
     @Override
     protected void start(ServerLevel level, EntityMaid maid, long gameTime) {
+        if (maid.isMaidInSittingPose()) return;
         maid.setSwingingArms(true);
+        strafingTime = -1;
     }
 
     @Override
@@ -52,44 +64,45 @@ public class SC2GunStrafingTask extends Behavior<EntityMaid> {
 
     @Override
     protected void tick(ServerLevel level, EntityMaid maid, long gameTime) {
-        if (maid.isMaidInSittingPose()) return;
+        if (maid.isMaidInSittingPose() || maid.isPassenger()) return;
         ItemStack gun = maid.getMainHandItem();
         if (!SC2GunCompat.isSC2Gun(gun)) return;
 
         maid.getBrain().getMemory(MemoryModuleType.ATTACK_TARGET).ifPresent(target -> {
             maid.setTarget(target);
             double dist = maid.distanceTo(target);
-            double idealRange = SC2GunCompat.getIdealRange(gun);
-            double combatRadius = idealRange * 0.5;
+            double maxStrafeDist = 8.0;
 
-            if (dist < idealRange * 1.3) {
+            if (dist < maxStrafeDist) {
                 strafingTime++;
             } else {
                 strafingTime = -1;
             }
 
             if (strafingTime >= 20) {
-                if (maid.getRandom().nextFloat() < 0.3) {
+                if (maid.getRandom().nextFloat() < 0.3f) {
                     strafingClockwise = !strafingClockwise;
                 }
-                if (maid.getRandom().nextFloat() < 0.3) {
+                if (maid.getRandom().nextFloat() < 0.3f) {
                     strafingBackwards = !strafingBackwards;
                 }
                 strafingTime = 0;
             }
 
             if (strafingTime > -1) {
-                if (dist > combatRadius * 1.3) {
-                    strafingBackwards = false;
-                } else if (dist < combatRadius * 0.6) {
+                if (dist < 6.0) {
                     strafingBackwards = true;
+                } else {
+                    strafingBackwards = false;
                 }
 
                 maid.getMoveControl().strafe(
-                        strafingBackwards ? -0.4f : 0.4f,
-                        strafingClockwise ? 0.2f : -0.2f
+                        strafingBackwards ? -0.4f : 0.0f,
+                        strafingClockwise ? 0.3f : -0.3f
                 );
                 maid.setYRot(Mth.rotateIfNecessary(maid.getYRot(), maid.yHeadRot, 0));
+            } else {
+                maid.getMoveControl().strafe(0, 0);
             }
 
             BehaviorUtils.lookAtEntity(maid, target);

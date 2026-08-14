@@ -229,7 +229,7 @@ tasks.withType(JavaCompile).configureEach {
 task copyToMods(type: Copy) {
     dependsOn 'reobfJar'
     from jar.archiveFile
-    into 'D:\\MCJAVA\\.minecraft\\versions\\1.20.1-Forge_47.4.20\\mods'
+    into 'D:\\MCJAVA\\.minecraft\\versions\\1.20.1-Forge_47.4.21\\mods'
 }
 
 build.finalizedBy copyToMods

@@ -19,5 +19,15 @@
   "chat_bubble.scg2_maid_compat.fire.0": "Take this!",
   "chat_bubble.scg2_maid_compat.fire.1": "Eat lead!",
   "chat_bubble.scg2_maid_compat.fire.2": "Say hello to my little friend!",
-  "chat_bubble.scg2_maid_compat.fire.3": "Bam!"
+  "chat_bubble.scg2_maid_compat.fire.3": "Bam!",
+  "advancements.scg2_maid_compat.scg2_first_shot.title": "First Shot",
+  "advancements.scg2_maid_compat.scg2_first_shot.description": "Switch a maid's task to Gunner mode",
+  "advancements.scg2_maid_compat.scg2_kill_mob.title": "The Times Are Changing",
+  "advancements.scg2_maid_compat.scg2_kill_mob.description": "A maid kills a mob with a Scorched Guns 2 weapon",
+  "advancements.scg2_maid_compat.scg2_laser_musket_100_illager.title": "General, There's a Settlement That Needs Your Help",
+  "advancements.scg2_maid_compat.scg2_laser_musket_100_illager.description": "Have a maid kill 100 illagers with a laser musket",
+  "advancements.scg2_maid_compat.scg2_kill_1000.title": "War Never Changes",
+  "advancements.scg2_maid_compat.scg2_kill_1000.description": "Have a maid kill 1000 mobs with guns",
+  "advancements.scg2_maid_compat.scg2_reload_ding.title": "Ding!",
+  "advancements.scg2_maid_compat.scg2_reload_ding.description": "Have a maid reload a Grandle or Grandle OG"
 }

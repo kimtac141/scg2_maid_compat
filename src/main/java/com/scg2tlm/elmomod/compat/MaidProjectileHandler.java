@@ -1,27 +1,67 @@
 package com.scg2tlm.elmomod.compat;
 
 import com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
+import net.minecraft.world.entity.monster.AbstractIllager;
 import net.minecraft.world.entity.monster.ZombifiedPiglin;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.registries.ForgeRegistries;
 import top.ribs.scguns.entity.monster.ZombifiedHornlinEntity;
 import top.ribs.scguns.entity.projectile.ProjectileEntity;
 
 @Mod.EventBusSubscriber(modid = com.scg2tlm.elmomod.ExampleMod.MODID)
 public class MaidProjectileHandler {
+    private static final String LASER_MUSKET_COUNT_KEY = "scg2tlm:laser_musket_illager_kills";
+    private static final int LASER_MUSKET_GOAL = 100;
+    private static final String TOTAL_KILL_COUNT_KEY = "scg2tlm:total_kills";
+    private static final int TOTAL_KILL_GOAL = 1000;
+    private static Item laserMusketItem;
+
+    private static Item getLaserMusketItem() {
+        if (laserMusketItem == null) {
+            laserMusketItem = ForgeRegistries.ITEMS.getValue(
+                ResourceLocation.fromNamespaceAndPath("scguns", "laser_musket"));
+        }
+        return laserMusketItem;
+    }
+
+    @SubscribeEvent
+    public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
+        if (!(event.getEntity() instanceof ProjectileEntity projectile)) return;
+        if (!(projectile.getOwner() instanceof EntityMaid)) return;
+        if (!projectile.getPersistentData().contains("AIDamageScale")) return;
+        projectile.getPersistentData().putFloat("AIDamageScale", 1.0f);
+    }
 
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {
         if (!(event.getSource().getDirectEntity() instanceof ProjectileEntity)) return;
-        if (!(event.getSource().getEntity() instanceof EntityMaid maid)) return;
+
+        Entity shooter = event.getSource().getEntity();
+
+        if (shooter instanceof Player player && event.getEntity() instanceof EntityMaid maid) {
+            if (player.getUUID().equals(maid.getOwnerUUID())) {
+                event.setCanceled(true);
+                return;
+            }
+        }
+
+        if (!(shooter instanceof EntityMaid maid)) return;
         if (event.getEntity() instanceof Player) return;
 
         event.getEntity().invulnerableTime = 0;
@@ -49,6 +89,36 @@ public class MaidProjectileHandler {
                         h.setLastHurtByMob(maid);
                         h.setPersistentAngerTarget(maid.getUUID());
                     });
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLivingDeath(LivingDeathEvent event) {
+        if (!(event.getSource().getDirectEntity() instanceof ProjectileEntity)) return;
+        if (!(event.getSource().getEntity() instanceof EntityMaid maid)) return;
+        if (event.getEntity() instanceof Player) return;
+
+        SC2AdvancementTriggers.triggerForMaidOwner(maid, SC2AdvancementTriggers.KILL_MOB);
+
+        if (!maid.level().isClientSide) {
+            CompoundTag data = maid.getPersistentData();
+            int total = data.getInt(TOTAL_KILL_COUNT_KEY) + 1;
+            data.putInt(TOTAL_KILL_COUNT_KEY, total);
+            if (total >= TOTAL_KILL_GOAL) {
+                SC2AdvancementTriggers.triggerForMaidOwner(maid, SC2AdvancementTriggers.KILL_1000);
+            }
+        }
+
+        if (event.getEntity() instanceof AbstractIllager && !maid.level().isClientSide) {
+            ItemStack held = maid.getMainHandItem();
+            if (held.getItem() == getLaserMusketItem()) {
+                CompoundTag data = maid.getPersistentData();
+                int count = data.getInt(LASER_MUSKET_COUNT_KEY) + 1;
+                data.putInt(LASER_MUSKET_COUNT_KEY, count);
+                if (count >= LASER_MUSKET_GOAL) {
+                    SC2AdvancementTriggers.triggerForMaidOwner(maid, SC2AdvancementTriggers.LASER_MUSKET_100_ILLAGER);
+                }
             }
         }
     }

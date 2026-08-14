@@ -19,5 +19,15 @@
   "chat_bubble.scg2_maid_compat.fire.0": "吃我一枪！",
   "chat_bubble.scg2_maid_compat.fire.1": "尝尝子弹的滋味！",
   "chat_bubble.scg2_maid_compat.fire.2": "接招吧！",
-  "chat_bubble.scg2_maid_compat.fire.3": "砰！"
+  "chat_bubble.scg2_maid_compat.fire.3": "砰！",
+  "advancements.scg2_maid_compat.scg2_first_shot.title": "初试锋芒",
+  "advancements.scg2_maid_compat.scg2_first_shot.description": "让女仆切换至枪手工作模式",
+  "advancements.scg2_maid_compat.scg2_kill_mob.title": "大人，时代变了",
+  "advancements.scg2_maid_compat.scg2_kill_mob.description": "女仆用枪械击杀一个生物",
+  "advancements.scg2_maid_compat.scg2_laser_musket_100_illager.title": "将军，有一处聚落需要你的帮助",
+  "advancements.scg2_maid_compat.scg2_laser_musket_100_illager.description": "让女仆使用激光火枪击杀100个灾厄村民",
+  "advancements.scg2_maid_compat.scg2_kill_1000.title": "战争从未改变",
+  "advancements.scg2_maid_compat.scg2_kill_1000.description": "让女仆用枪械击杀1000个生物",
+  "advancements.scg2_maid_compat.scg2_reload_ding.title": "叮！",
+  "advancements.scg2_maid_compat.scg2_reload_ding.description": "让女仆为忆宏或忆宏-改进行一次换弹"
 }

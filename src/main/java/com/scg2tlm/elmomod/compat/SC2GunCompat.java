@@ -1,11 +1,13 @@
 package com.scg2tlm.elmomod.compat;
 
+import com.scg2tlm.elmomod.SCG2TLMConfig;
 import com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
@@ -14,17 +16,28 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.IItemHandlerModifiable;
 import net.minecraftforge.items.ItemHandlerHelper;
+import net.minecraftforge.items.wrapper.RangedWrapper;
 import net.minecraftforge.registries.ForgeRegistries;
 
+import java.util.Map;
 import java.util.Set;
+
+import org.slf4j.Logger;
+import com.mojang.logging.LogUtils;
+import top.ribs.scguns.util.GunModifierHelper;
 
 import com.github.tartaricacid.touhoulittlemaid.geckolib3.core.builder.Animation;
 import com.github.tartaricacid.touhoulittlemaid.geckolib3.core.builder.AnimationBuilder;
 import com.github.tartaricacid.touhoulittlemaid.geckolib3.core.builder.ILoopType;
 import com.github.tartaricacid.touhoulittlemaid.geckolib3.core.controller.AnimationController;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.energy.IEnergyStorage;
 import top.ribs.scguns.common.Gun;
 import top.ribs.scguns.common.Gun.WeaponType;
+import top.ribs.scguns.common.GripType;
+import top.ribs.scguns.init.ModTags;
 import top.ribs.scguns.entity.ai.AIGunEvent;
 import top.ribs.scguns.entity.throwable.ThrowableGrenadeEntity;
 import top.ribs.scguns.item.BeaconGrenadeItem;
@@ -34,18 +47,59 @@ import top.ribs.scguns.item.AmmoBoxItem;
 import top.ribs.scguns.item.GunItem;
 
 public final class SC2GunCompat {
-    private static final float DEFAULT_ACCURACY = 2.0f;
-    private static final Set<String> MINIGUN_GUNS = Set.of(
+    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final Class<?> ENERGY_GUN_CLASS = initEnergyGunClass();
+
+    private static Class<?> initEnergyGunClass() {
+        try {
+            return Class.forName("top.ribs.scguns.common.item.gun.RechargeableEnergyGunItem");
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
+
+    private static final Set<String> SC2_MINIGUN_GUNS = Set.of(
             "thunderhead", "gattaler", "weevil", "hullbreaker",
             "cr4k_mining_laser", "flayed_god", "spitfire", "cyclone"
     );
-    private static final Set<String> RPG_GUNS = Set.of(
+    private static final Set<String> CC_MINIGUN_GUNS = Set.of(
+            "electrothermal_autocannon"
+    );
+    private static final Set<String> SC2_RPG_GUNS = Set.of(
             "kiln_gun", "scratches", "dozier_rl", "terra_incognita"
     );
+    private static final Set<String> CC_RPG_GUNS = Set.of(
+            "lustre"
+    );
+    private static final Set<String> OREG_MINIGUN_GUNS = Set.of(
+            "electrum_spoolgun", "mauvite_beam_rifle"
+    );
+    private static final Set<String> OREG_RPG_GUNS = Set.of(
+            "electrum_bomber", "mauvite_launcher"
+    );
+
+    public static final String SCGUNS_NS = "scguns";
+    public static final String SCCAVES_NS = "scguns_cnc";
+    public static final String OREGUNIZED_NS = "scguns_oregunized";
+
     public static boolean isSC2Gun(ItemStack stack) {
         if (stack.isEmpty()) return false;
         ResourceLocation key = ForgeRegistries.ITEMS.getKey(stack.getItem());
-        return key != null && "scguns".equals(key.getNamespace());
+        if (key == null) return false;
+        String ns = key.getNamespace();
+        return SCGUNS_NS.equals(ns) || SCCAVES_NS.equals(ns) || OREGUNIZED_NS.equals(ns);
+    }
+
+    public static boolean isCCGun(ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        ResourceLocation key = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        return key != null && SCCAVES_NS.equals(key.getNamespace());
+    }
+
+    public static boolean isOregunizedGun(ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        ResourceLocation key = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        return key != null && OREGUNIZED_NS.equals(key.getNamespace());
     }
 
     public static ResourceLocation getGunId(ItemStack stack) {
@@ -53,6 +107,31 @@ public final class SC2GunCompat {
             return ForgeRegistries.ITEMS.getKey(stack.getItem());
         }
         return null;
+    }
+
+    public static boolean isEnergyGun(ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        if (ENERGY_GUN_CLASS == null) return false;
+        return ENERGY_GUN_CLASS.isInstance(stack.getItem());
+    }
+
+    private static final Map<String, Integer> ENERGY_RECHARGE_RATES = Map.of(
+            "lustre", 2,
+            "electrothermal_autocannon", 50,
+            "scatterer", 10
+    );
+
+    public static void tickEnergyRecharge(ItemStack stack) {
+        if (ENERGY_GUN_CLASS == null) return;
+        if (!ENERGY_GUN_CLASS.isInstance(stack.getItem())) return;
+        ResourceLocation key = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        if (key == null) return;
+        int rate = ENERGY_RECHARGE_RATES.getOrDefault(key.getPath(), 10);
+        stack.getCapability(ForgeCapabilities.ENERGY, null).ifPresent(energy -> {
+            if (energy.getEnergyStored() < energy.getMaxEnergyStored()) {
+                energy.receiveEnergy(rate, false);
+            }
+        });
     }
 
     public static int performGunAttack(LivingEntity maid, LivingEntity target, ItemStack gun) {
@@ -63,27 +142,50 @@ public final class SC2GunCompat {
         }
 
         Gun modifiedGun = gunItem.getModifiedGun(gun);
-        int rate = modifiedGun.getGeneral().getRate();
+        Gun.General general = getGeneral(gun, gunItem);
+        int rate = GunModifierHelper.getModifiedRate(gun, general.getRate());
 
-        if (!Gun.hasAmmo(gun)) {
+        if (!Gun.hasAmmo(gun) && !isEnergyGun(gun)) {
             return rate;
         }
 
         rotateToFace(maid, target);
 
         mob.swing(InteractionHand.MAIN_HAND);
-        AIGunEvent.performGunAttack(mob, target, gun, modifiedGun, DEFAULT_ACCURACY);
+        if (modifiedGun != null && modifiedGun.getProjectile() != null && modifiedGun.getProjectile().getItem() != null) {
+            AIGunEvent.performGunAttack(mob, target, gun, modifiedGun, SCG2TLMConfig.GUN_ACCURACY.get().floatValue());
+        } else {
+            AIGunEvent.performGunAttack(mob, target, gun, gunItem.getGun(), SCG2TLMConfig.GUN_ACCURACY.get().floatValue());
+        }
 
         if (target instanceof Mob mobTarget) {
             mobTarget.setLastHurtByMob(maid);
             mobTarget.setTarget(mob);
         }
 
-        playFireSound(maid, modifiedGun);
+        playFireSound(maid, gun, gunItem);
 
-        int ammoCount = Gun.getAmmoCount(gun);
-        if (ammoCount > 0) {
-            gun.getOrCreateTag().putInt("AmmoCount", ammoCount - 1);
+        if (!isEnergyGun(gun)) {
+            int ammoCount = Gun.getAmmoCount(gun);
+            if (ammoCount > 0) {
+                gun.getOrCreateTag().putInt("AmmoCount", ammoCount - 1);
+                Gun.Projectile projectile = getProjectile(gun, gunItem);
+                if (projectile != null && projectile.ejectsCasing() && !projectile.ejectDuringReload()
+                        && maid.getRandom().nextFloat() < 0.8f) {
+                    spawnCasing(maid, gun, gunItem, 1);
+                }
+            }
+        }
+
+        int bursts = general.getBurstAmount();
+        if (bursts > 1) {
+            int shotInBurst = gun.getOrCreateTag().getInt("scg2tlm:burst_shot");
+            shotInBurst++;
+            if (shotInBurst >= bursts) {
+                gun.getOrCreateTag().putInt("scg2tlm:burst_shot", 0);
+                return Math.max(general.getBurstCooldown(), rate * 2);
+            }
+            gun.getOrCreateTag().putInt("scg2tlm:burst_shot", shotInBurst);
         }
 
         return rate;
@@ -91,24 +193,93 @@ public final class SC2GunCompat {
 
     public static int getAttackCooldown(ItemStack gun) {
         if (!(gun.getItem() instanceof GunItem gunItem)) return 5;
-        return gunItem.getModifiedGun(gun).getGeneral().getRate();
+        return GunModifierHelper.getModifiedRate(gun, getGeneral(gun, gunItem).getRate());
     }
 
-    private static void playFireSound(LivingEntity entity, Gun modifiedGun) {
-        ResourceLocation soundId = modifiedGun.getSounds().getFire();
+    private static Gun.General getGeneral(ItemStack gun, GunItem gunItem) {
+        Gun modifiedGun = gunItem.getModifiedGun(gun);
+        if (modifiedGun != null) {
+            Gun.General general = modifiedGun.getGeneral();
+            if (general != null) return general;
+        }
+        return gunItem.getGun().getGeneral();
+    }
+
+    private static Gun.Reloads getReloads(ItemStack gun, GunItem gunItem) {
+        Gun modifiedGun = gunItem.getModifiedGun(gun);
+        if (modifiedGun != null) {
+            Gun.Reloads reloads = modifiedGun.getReloads();
+            if (reloads != null) return reloads;
+        }
+        return gunItem.getGun().getReloads();
+    }
+
+    private static Gun.Sounds getSounds(ItemStack gun, GunItem gunItem) {
+        Gun modifiedGun = gunItem.getModifiedGun(gun);
+        if (modifiedGun != null) {
+            Gun.Sounds sounds = modifiedGun.getSounds();
+            if (sounds != null) return sounds;
+        }
+        return gunItem.getGun().getSounds();
+    }
+
+    private static Gun.Projectile getProjectile(ItemStack gun, GunItem gunItem) {
+        Gun modifiedGun = gunItem.getModifiedGun(gun);
+        if (modifiedGun != null) {
+            Gun.Projectile projectile = modifiedGun.getProjectile();
+            if (projectile != null) return projectile;
+        }
+        return gunItem.getGun().getProjectile();
+    }
+
+    private static void playFireSound(LivingEntity entity, ItemStack gun, GunItem gunItem) {
+        boolean silenced = GunModifierHelper.isSilencedFire(gun);
+        Gun.Sounds sounds = getSounds(gun, gunItem);
+        ResourceLocation soundId = silenced ? sounds.getSilencedFire() : sounds.getFire();
+        if (soundId == null && silenced) {
+            soundId = sounds.getFire();
+        }
         if (soundId != null) {
             SoundEvent soundEvent = ForgeRegistries.SOUND_EVENTS.getValue(soundId);
             if (soundEvent != null) {
+                float volume = GunModifierHelper.getFireSoundVolume(gun) * 4.0f;
                 entity.level().playSound(null, entity.getX(), entity.getY(), entity.getZ(),
-                        soundEvent, SoundSource.NEUTRAL, 3.0f, 0.9f + entity.getRandom().nextFloat() * 0.2f);
+                        soundEvent, SoundSource.NEUTRAL, volume, 0.9f + entity.getRandom().nextFloat() * 0.2f);
             }
         }
+    }
+
+    public static void playGunSound(LivingEntity entity, ItemStack gun, ResourceLocation soundId, float volume) {
+        if (soundId == null) return;
+        SoundEvent soundEvent = ForgeRegistries.SOUND_EVENTS.getValue(soundId);
+        if (soundEvent != null) {
+            entity.level().playSound(null, entity.getX(), entity.getY(), entity.getZ(),
+                    soundEvent, SoundSource.NEUTRAL, volume, 0.9f + entity.getRandom().nextFloat() * 0.2f);
+        }
+    }
+
+    public static void playPreReloadSound(LivingEntity entity, ItemStack gun) {
+        if (!(gun.getItem() instanceof GunItem gunItem)) return;
+        playGunSound(entity, gun, getSounds(gun, gunItem).getPreReload(), 1.0f);
+    }
+
+    public static void playReloadSound(LivingEntity entity, ItemStack gun) {
+        if (!(gun.getItem() instanceof GunItem gunItem)) return;
+        playGunSound(entity, gun, getSounds(gun, gunItem).getReload(), 1.0f);
+    }
+
+    public static void playCockSound(LivingEntity entity, ItemStack gun) {
+        if (!(gun.getItem() instanceof GunItem gunItem)) return;
+        playGunSound(entity, gun, getSounds(gun, gunItem).getCock(), 1.0f);
     }
 
     public static boolean isGrenade(ItemStack stack) {
         if (stack.isEmpty()) return false;
         Item item = stack.getItem();
-        return item instanceof GrenadeItem || item instanceof GasGrenadeItem || item instanceof BeaconGrenadeItem;
+        if (item instanceof GrenadeItem || item instanceof GasGrenadeItem || item instanceof BeaconGrenadeItem) {
+            return true;
+        }
+        return false;
     }
 
     public static void performGrenadeThrow(EntityMaid maid, LivingEntity target, ItemStack stack) {
@@ -162,6 +333,9 @@ public final class SC2GunCompat {
         if (stack.isEmpty() || !(stack.getItem() instanceof GunItem)) {
             return false;
         }
+        if (isEnergyGun(stack)) {
+            return false;
+        }
         if (Gun.Reloads.hasInfiniteAmmo(stack)) {
             return false;
         }
@@ -170,14 +344,16 @@ public final class SC2GunCompat {
 
     public static int getReloadTime(ItemStack stack) {
         if (stack.isEmpty() || !(stack.getItem() instanceof GunItem gunItem)) return 20;
-        Gun modifiedGun = gunItem.getModifiedGun(stack);
-        return modifiedGun.getReloads().getReloadTimer() + modifiedGun.getReloads().getEmptyMagTimer();
+        Gun.Reloads reloads = getReloads(stack, gunItem);
+        double baseTime = reloads.getReloadTimer() + reloads.getEmptyMagTimer();
+        return (int) GunModifierHelper.getModifiedReloadSpeed(stack, baseTime);
     }
 
     public static int getMaxAmmo(ItemStack stack) {
         if (stack.isEmpty() || !(stack.getItem() instanceof GunItem gunItem)) return 0;
-        Gun modifiedGun = gunItem.getModifiedGun(stack);
-        return modifiedGun.getReloads().getMaxAmmo();
+        int capacity = GunModifierHelper.getModifiedAmmoCapacity(stack, gunItem.getGun());
+        LOGGER.info("getMaxAmmo: capacity={}, stack={}", capacity, stack);
+        return capacity;
     }
 
     public static void setFullAmmo(ItemStack stack) {
@@ -189,11 +365,16 @@ public final class SC2GunCompat {
     }
 
     public static boolean hasAmmoInInventory(EntityMaid maid, ItemStack gun) {
+        if (SCG2TLMConfig.RELOAD_FREE_AMMO.get()) {
+            return true;
+        }
+        if (isEnergyGun(gun)) {
+            return true;
+        }
         if (!(gun.getItem() instanceof GunItem gunItem)) {
             return false;
         }
-        Gun modifiedGun = gunItem.getModifiedGun(gun);
-        Item ammoType = modifiedGun.getProjectile().getItem();
+        Item ammoType = getProjectileItem(gun, gunItem);
         if (ammoType == null) {
             return false;
         }
@@ -211,23 +392,52 @@ public final class SC2GunCompat {
         return false;
     }
 
-    public static void reloadFromInventory(EntityMaid maid, ItemStack gun) {
+    private static Item getProjectileItem(ItemStack gun, GunItem gunItem) {
+        Gun modifiedGun = gunItem.getModifiedGun(gun);
+        if (modifiedGun != null) {
+            var projectile = modifiedGun.getProjectile();
+            if (projectile != null) {
+                Item item = projectile.getItem();
+                if (item != null) return item;
+            }
+        }
+        var baseProjectile = gunItem.getGun().getProjectile();
+        if (baseProjectile != null) {
+            Item baseItem = baseProjectile.getItem();
+            if (baseItem != null) return baseItem;
+        }
+        return null;
+    }
+
+    public static boolean reloadFromInventory(EntityMaid maid, ItemStack gun) {
+        if (isEnergyGun(gun)) {
+            return false;
+        }
         if (!(gun.getItem() instanceof GunItem gunItem)) {
-            return;
+            return false;
+        }
+        if (SCG2TLMConfig.RELOAD_FREE_AMMO.get()) {
+            int maxAmmo = getMaxAmmo(gun);
+            CompoundTag tag = gun.getOrCreateTag();
+            tag.putInt("AmmoCount", maxAmmo);
+            tag.putInt("PrevAmmoCount", maxAmmo);
+            LOGGER.info("reloadFromInventory(free): maxAmmo={}, stack={}", maxAmmo, gun);
+            return true;
         }
         Gun modifiedGun = gunItem.getModifiedGun(gun);
-        int maxAmmo = modifiedGun.getReloads().getMaxAmmo();
-        Item ammoType = modifiedGun.getProjectile().getItem();
+        int maxAmmo = getMaxAmmo(gun);
+        Item ammoType = getProjectileItem(gun, gunItem);
         if (ammoType == null) {
-            return;
+            LOGGER.warn("reloadFromInventory: ammoType is null, cannot reload");
+            return false;
         }
 
         ResourceLocation ammoId = ForgeRegistries.ITEMS.getKey(ammoType);
+        boolean isSingleReload = isSingleReloadAmmo(ammoType);
         boolean isEnergyCore = ammoId != null && "scguns".equals(ammoId.getNamespace())
                 && "energy_core".equals(ammoId.getPath());
         boolean isBlazeFuel = ammoId != null && "scguns".equals(ammoId.getNamespace())
                 && "blaze_fuel".equals(ammoId.getPath());
-        boolean isSingleReload = isEnergyCore || isBlazeFuel;
 
         IItemHandler inv = maid.getAvailableInv(true);
         int found = 0;
@@ -245,13 +455,19 @@ public final class SC2GunCompat {
                 found = extractFromAmmoBoxes(maid, inv, ammoType, 1);
             }
             if (found > 0) {
+                LOGGER.info("reloadFromInventory(single): maxAmmo={}, found={}", maxAmmo, found);
                 gun.getOrCreateTag().putInt("AmmoCount", maxAmmo);
                 if (isBlazeFuel) {
                     spawnEmptyTank(maid);
+                } else if (ammoId != null && SCCAVES_NS.equals(ammoId.getNamespace())) {
+                    spawnDepletedNSItem(maid, ammoId.getNamespace(), ammoId.getPath(), "depleted_crystal");
+                } else if (ammoId != null && OREGUNIZED_NS.equals(ammoId.getNamespace())) {
+                    spawnDepletedNSItem(maid, ammoId.getNamespace(), ammoId.getPath(), "depleted_electrum_cell");
                 } else {
                     spawnDepletedCore(maid);
                 }
             }
+            return found > 0;
         } else {
             for (int i = 0; i < inv.getSlots(); i++) {
                 ItemStack slot = inv.getStackInSlot(i);
@@ -268,12 +484,18 @@ public final class SC2GunCompat {
             if (found > 0) {
                 int newCount = Math.min(found, maxAmmo);
                 CompoundTag tag = gun.getOrCreateTag();
+                int prevAmmo = tag.getInt("AmmoCount");
 
                 int casingCount = tag.contains("PrevAmmoCount") ? tag.getInt("PrevAmmoCount") : 0;
                 tag.putInt("AmmoCount", newCount);
                 tag.putInt("PrevAmmoCount", newCount);
-                spawnCasing(maid, modifiedGun, casingCount);
+                LOGGER.info("reloadFromInventory: maxAmmo={}, found={}, newCount={}, prevAmmo={}, ammoType={}", maxAmmo, found, newCount, prevAmmo, ammoType);
+                Gun.Projectile proj = getProjectile(gun, gunItem);
+                if (proj != null && proj.ejectDuringReload()) {
+                    spawnCasing(maid, gun, gunItem, casingCount);
+                }
             }
+            return found > 0;
         }
 
     }
@@ -372,8 +594,38 @@ public final class SC2GunCompat {
         if (item == null) return false;
         ResourceLocation id = ForgeRegistries.ITEMS.getKey(item);
         if (id == null) return false;
-        if (!"scguns".equals(id.getNamespace())) return false;
-        return "energy_core".equals(id.getPath()) || "blaze_fuel".equals(id.getPath());
+        String ns = id.getNamespace();
+        String path = id.getPath();
+        if (SCGUNS_NS.equals(ns)) {
+            return "energy_core".equals(path) || "blaze_fuel".equals(path);
+        }
+        if (SCCAVES_NS.equals(ns)) {
+            return "pulse_core".equals(path);
+        }
+        if (OREGUNIZED_NS.equals(ns)) {
+            return "electrum_cell".equals(path) || "mauvite_core".equals(path);
+        }
+        return false;
+    }
+
+    private static void spawnDepletedNSItem(EntityMaid maid, String namespace, String ammoPath, String defaultDepletedPath) {
+        String depletedItemPath = "depleted_" + ammoPath;
+        Item depleted = ForgeRegistries.ITEMS.getValue(
+                ResourceLocation.fromNamespaceAndPath(namespace, depletedItemPath));
+        if (depleted == null) {
+            depleted = ForgeRegistries.ITEMS.getValue(
+                    ResourceLocation.fromNamespaceAndPath(namespace, defaultDepletedPath));
+        }
+        if (depleted == null) return;
+        ItemStack stack = new ItemStack(depleted);
+        IItemHandler inv = maid.getAvailableInv(false);
+        ItemStack remaining = ItemHandlerHelper.insertItemStacked(inv, stack, false);
+        if (!remaining.isEmpty()) {
+            ItemEntity entity = new ItemEntity(maid.level(),
+                    maid.getX(), maid.getY() + 1.0, maid.getZ(), remaining);
+            entity.setPickUpDelay(10);
+            maid.level().addFreshEntity(entity);
+        }
     }
 
     private static void spawnEmptyTank(EntityMaid maid) {
@@ -394,18 +646,21 @@ public final class SC2GunCompat {
         }
     }
 
-    private static void spawnCasing(LivingEntity entity, Gun modifiedGun, int count) {
-        Item ammoType = modifiedGun.getProjectile().getItem();
-        if (isSingleReloadAmmo(ammoType)) {
+    private static void spawnCasing(LivingEntity entity, ItemStack gun, GunItem gunItem, int count) {
+        Item ammoType = getProjectileItem(gun, gunItem);
+        if (ammoType == null || isSingleReloadAmmo(ammoType)) {
             return;
         }
 
-        boolean ejects = modifiedGun.getProjectile().ejectsCasing();
+        Gun.Projectile projectile = getProjectile(gun, gunItem);
+        if (projectile == null) return;
+
+        boolean ejects = projectile.ejectsCasing();
         if (!ejects) return;
 
-        ResourceLocation casingId = modifiedGun.getProjectile().getCasingType();
+        ResourceLocation casingId = projectile.getCasingType();
         if (casingId == null) {
-            casingId = modifiedGun.getProjectile().casingType;
+            casingId = projectile.casingType;
             if (casingId == null) {
                 return;
             }
@@ -419,14 +674,13 @@ public final class SC2GunCompat {
         ItemStack casingStack = new ItemStack(casingItem, count);
 
         if (entity instanceof EntityMaid maid) {
-            IItemHandler inv = maid.getAvailableInv(true);
+            IItemHandlerModifiable inv = maid.getAvailableInv(false);
 
-            // First try to insert into compatible ammo boxes (e.g. EmptyCasingPouch)
             int remaining = insertIntoAmmoBoxes(inv, casingStack.copy());
             if (remaining <= 0) return;
-            casingStack = new ItemStack(casingItem, remaining);
 
-            ItemStack leftover = ItemHandlerHelper.insertItemStacked(inv, casingStack, false);
+            IItemHandler noOffhand = new RangedWrapper(inv, 0, inv.getSlots() - 1);
+            ItemStack leftover = ItemHandlerHelper.insertItemStacked(noOffhand, new ItemStack(casingItem, remaining), false);
             if (!leftover.isEmpty()) {
                 ItemEntity entityItem = new ItemEntity(entity.level(),
                         entity.getX(), entity.getY() + 0.5, entity.getZ(),
@@ -449,18 +703,23 @@ public final class SC2GunCompat {
 
     public static WeaponType getWeaponType(ItemStack stack) {
         if (stack.isEmpty() || !(stack.getItem() instanceof GunItem gunItem)) return null;
-        Gun modifiedGun = gunItem.getModifiedGun(stack);
-        return modifiedGun.getGeneral().getWeaponType();
+        return getGeneral(stack, gunItem).getWeaponType();
     }
 
     public static boolean isMinigunGun(ItemStack stack) {
         ResourceLocation key = ForgeRegistries.ITEMS.getKey(stack.getItem());
-        return key != null && MINIGUN_GUNS.contains(key.getPath());
+        if (key == null) return false;
+        return SC2_MINIGUN_GUNS.contains(key.getPath())
+                || CC_MINIGUN_GUNS.contains(key.getPath())
+                || OREG_MINIGUN_GUNS.contains(key.getPath());
     }
 
     public static boolean isRpgGun(ItemStack stack) {
         ResourceLocation key = ForgeRegistries.ITEMS.getKey(stack.getItem());
-        return key != null && RPG_GUNS.contains(key.getPath());
+        if (key == null) return false;
+        return SC2_RPG_GUNS.contains(key.getPath())
+                || CC_RPG_GUNS.contains(key.getPath())
+                || OREG_RPG_GUNS.contains(key.getPath());
     }
 
     public static boolean setAnimOnce(AnimationController<?> controller, String name, ILoopType loopType) {
@@ -474,51 +733,93 @@ public final class SC2GunCompat {
 
     public static double getIdealRange(ItemStack stack) {
         WeaponType type = getWeaponType(stack);
-        if (type == null) return 24.0;
-        return switch (type) {
-            case sniper -> 80.0;
-            case rifle -> 32.0;
-            case magnum -> 28.0;
-            case smg -> 16.0;
-            case shotgun -> 14.0;
-            case pistol -> 12.0;
-            case heavy -> 32.0;
-            case lmg -> 36.0;
-            default -> 24.0;
-        };
+        double baseRange = SCG2TLMConfig.GUN_RANGE.get();
+        if (type == null) return baseRange * 0.375;
+        if (type == WeaponType.sniper) return Math.min(baseRange * 1.25, SCG2TLMConfig.SNIPER_SEARCH_RADIUS.get() * 0.85);
+        if (type == WeaponType.rifle) return baseRange * 0.5;
+        if (type == WeaponType.magnum) return baseRange * 0.4375;
+        if (type == WeaponType.smg) return baseRange * 0.25;
+        if (type == WeaponType.shotgun) return baseRange * 0.21875;
+        if (type == WeaponType.pistol) return baseRange * 0.1875;
+        if (type == WeaponType.heavy) return baseRange * 0.5;
+        if (type == WeaponType.lmg) return baseRange * 0.5625;
+        return baseRange * 0.375;
     }
 
     public static double getMinRange(ItemStack stack) {
         WeaponType type = getWeaponType(stack);
-        if (type == null) return 5.0;
-        return switch (type) {
-            case sniper -> 28.0;
-            case rifle -> 8.0;
-            case magnum -> 8.0;
-            case smg -> 4.0;
-            case shotgun -> 3.0;
-            case pistol -> 3.0;
-            case heavy -> 16.0;
-            case lmg -> 10.0;
-            default -> 5.0;
-        };
+        double baseRange = SCG2TLMConfig.GUN_RANGE.get();
+        if (type == null) return baseRange * 0.078125;
+        if (type == WeaponType.sniper) return baseRange * 0.4375;
+        if (type == WeaponType.rifle) return baseRange * 0.125;
+        if (type == WeaponType.magnum) return baseRange * 0.125;
+        if (type == WeaponType.smg) return baseRange * 0.0625;
+        if (type == WeaponType.shotgun) return baseRange * 0.046875;
+        if (type == WeaponType.pistol) return baseRange * 0.046875;
+        if (type == WeaponType.heavy) return baseRange * 0.25;
+        if (type == WeaponType.lmg) return baseRange * 0.15625;
+        return baseRange * 0.078125;
     }
 
     public static String getAnimationGunType(ItemStack stack) {
+        if (stack.isEmpty() || !(stack.getItem() instanceof GunItem)) return "";
         if (isMinigunGun(stack)) return "rifle";
         if (isRpgGun(stack)) return "rpg";
         WeaponType type = getWeaponType(stack);
         if (type == null) return "rifle";
-        return switch (type) {
-            case pistol -> "pistol";
-            case magnum -> "pistol";
-            case smg -> "rifle";
-            case rifle -> "rifle";
-            case lmg -> "rifle";
-            case shotgun -> "rifle";
-            case sniper -> "rifle";
-            case heavy -> "rifle";
-            default -> "rifle";
-        };
+
+        // One-handed carbine (pistol/magnum) with stock -> dynamically two-handed -> rifle pose
+        if ((type == WeaponType.pistol || type == WeaponType.magnum)
+                && stack.getItem() instanceof GunItem gi) {
+            Gun modifiedGun = gi.getModifiedGun(stack);
+            if (modifiedGun != null && modifiedGun.getGeneral() != null) {
+                GripType grip = modifiedGun.getGeneral().getGripType(stack);
+                if (grip == GripType.TWO_HANDED) {
+                    return "rifle";
+                }
+            }
+        }
+
+        if (type == WeaponType.pistol || type == WeaponType.magnum) return "pistol";
+        return "rifle";
+    }
+
+    public static boolean hasBayonet(ItemStack stack) {
+        if (!(stack.getItem() instanceof GunItem gunItem)) return false;
+        return gunItem.hasBayonet(stack) || stack.is(ModTags.Items.BUILT_IN_BAYONET);
+    }
+
+    public static float getMeleeReach(ItemStack stack) {
+        if (!(stack.getItem() instanceof GunItem gunItem)) return 2.5f;
+        Gun modified = gunItem.getModifiedGun(stack);
+        if (modified == null || modified.getGeneral() == null) return 2.5f;
+        return modified.getGeneral().getMeleeReach();
+    }
+
+    public static int getMeleeCooldownTicks(ItemStack stack) {
+        if (!(stack.getItem() instanceof GunItem gunItem)) return 10;
+        Gun modified = gunItem.getModifiedGun(stack);
+        if (modified == null || modified.getGeneral() == null) return 10;
+        return modified.getGeneral().getMeleeCooldownTicks();
+    }
+
+    public static float getMeleeDamage(ItemStack stack) {
+        if (!(stack.getItem() instanceof GunItem gunItem)) return 1.0f;
+        Gun modified = gunItem.getModifiedGun(stack);
+        if (modified == null || modified.getGeneral() == null) return 1.0f;
+        return modified.getGeneral().getMeleeDamage();
+    }
+
+    public static int performMeleeAttack(EntityMaid maid, LivingEntity target, ItemStack gun) {
+        if (!(gun.getItem() instanceof GunItem gunItem)) return 10;
+        float damage = getMeleeDamage(gun);
+
+        if (gunItem.hasBayonet(gun)) {
+            damage += GunModifierHelper.getAdditionalDamage(gun, true);
+        }
+
+        target.hurt(maid.damageSources().mobAttack(maid), damage);
+        maid.playSound(SoundEvents.PLAYER_ATTACK_WEAK, 1.0f, 0.9f + maid.getRandom().nextFloat() * 0.2f);
+        return getMeleeCooldownTicks(gun);
     }
 }

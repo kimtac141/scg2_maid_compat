@@ -7,11 +7,16 @@
   "client": [
     "AnimationManagerMixin",
     "GunBaseAnimationMixin",
+    "GunItemStackRendererMixin",
     "TacCompatMixin"
   ],
   "mixins": [
     "EntityMaidTaskDataInvoker",
+    "GunAttackGoalMixin",
+    "GunnerMobSpawnerMixin",
+    "MaidAttackStrafingTaskMixin",
     "MaidPickupEntitiesTaskMixin",
+    "PolarGeneratorBlockEntityMixin",
     "ProjectileEntityMixin",
     "LightningProjectileEntityMixin"
   ]
