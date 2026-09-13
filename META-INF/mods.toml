@@ -20,7 +20,7 @@ license="All Rights Reserved"
 # The modid of the mod
 modId="scg2_maid_compat" #mandatory
 # The version number of the mod
-version="1.0.0" #mandatory
+version="1.0.4" #mandatory
 # A display name for the mod
 displayName="Scorched Guns: Maid Compat" #mandatory
 # A URL to query for updates for this mod. See the JSON update specification https://docs.minecraftforge.net/en/latest/misc/updatechecker/

@@ -6,13 +6,24 @@
   "refmap": "scg2_maid_compat.refmap.json",
   "client": [
     "AnimationManagerMixin",
+    "AttachmentScreenRateMixin",
+    "GeckoModelLoaderMixin",
     "GunBaseAnimationMixin",
-    "TacCompatMixin"
+    "GunItemStackRendererMixin",
+    "TacCompatMixin",
+    "HealingBandageAccessor"
   ],
   "mixins": [
+    "AIGunEventLeadMixin",
     "EntityMaidTaskDataInvoker",
+    "GunAttackGoalMixin",
+    "GunnerMobSpawnerMixin",
+    "MaidAttackStrafingTaskMixin",
     "MaidPickupEntitiesTaskMixin",
+    "PolarGeneratorBlockEntityMixin",
     "ProjectileEntityMixin",
-    "LightningProjectileEntityMixin"
+    "ProjectileFactionFriendlyFireMixin",
+    "LightningProjectileEntityMixin",
+    "SulfurheadEntityMixin"
   ]
 }

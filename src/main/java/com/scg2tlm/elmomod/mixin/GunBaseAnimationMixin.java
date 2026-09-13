@@ -3,7 +3,7 @@ package com.scg2tlm.elmomod.mixin;
 import com.github.tartaricacid.touhoulittlemaid.api.entity.IMaid;
 import com.github.tartaricacid.touhoulittlemaid.client.animation.gecko.condition.ConditionManager;
 import com.github.tartaricacid.touhoulittlemaid.client.animation.script.ModelRendererWrapper;
-import com.github.tartaricacid.touhoulittlemaid.compat.tacz.client.GunBaseAnimation;
+import com.github.tartaricacid.touhoulittlemaid.compat.gun.tacz.client.GunBaseAnimation;
 import com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid;
 import com.github.tartaricacid.touhoulittlemaid.geckolib3.file.AnimationFile;
 import com.github.tartaricacid.touhoulittlemaid.geckolib3.resource.GeckoLibCache;
@@ -19,8 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class GunBaseAnimationMixin {
     private static boolean hasCustomTacAnim(IMaid maid) {
         if (maid == null) return false;
-        EntityMaid entity = (EntityMaid) maid.asEntity();
-        if (entity == null) return false;
+        if (!(maid.asEntity() instanceof EntityMaid entity)) return false;
         String modelIdStr = entity.getModelId();
         if (modelIdStr == null || !modelIdStr.contains(":")) return false;
         ResourceLocation modelId = ResourceLocation.tryParse(modelIdStr);
@@ -38,6 +37,8 @@ public class GunBaseAnimationMixin {
 
     @Inject(method = "onHoldGun", at = @At("HEAD"), cancellable = true, remap = false)
     private static void onOnHoldGun(IMaid maid, ModelRendererWrapper arm1, ModelRendererWrapper arm2, CallbackInfoReturnable<Boolean> cir) {
+        if (maid == null) return;
+        if (maid.asEntity().isSleeping()) { cir.setReturnValue(false); return; }
         ItemStack stack = maid.asEntity().getMainHandItem();
         if (!SC2GunCompat.isSC2Gun(stack)) return;
 

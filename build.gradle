@@ -124,6 +124,10 @@ repositories {
         url "https://repo.spongepowered.org/repository/maven-public/"
     }
 
+    flatDir {
+        dir 'libs'
+    }
+
     // If you have mod jar dependencies in ./libs, you can declare them as a repository like so.
     // See https://docs.gradle.org/current/userguide/declaring_repositories.html#sub:flat_dir_resolver
     // flatDir {
@@ -140,12 +144,39 @@ dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
     // Touhou Little Maid dependency (optional at runtime, required at compile time)
-    implementation fg.deobf('curse.maven:touhou-little-maid-355044:6613821-sources-6613853')
+    // Local jar = TLM 1.5.3 (matches the runtime version in the game mods folder).
+    // The release jar keeps the TAC compat classes under `compat.gun.tacz` (moved from
+    // the 1.3.x `compat.tacz`), which the client mixins TacCompatMixin/GunBaseAnimationMixin target.
+    implementation fg.deobf('tlm:tlm:1.5.3')
 
     // Scorched Guns 2 hard dependency
     implementation fg.deobf('curse.maven:scorched-guns-2-802940:7232063')
     implementation fg.deobf('curse.maven:geckolib-388172:8285794')
     implementation fg.deobf('curse.maven:framework-549225:7573740')
+
+    // Cloth Config API (optional at runtime, compile only). Provides a GUI config screen.
+    // Not bundled; the mod checks for cloth_config at runtime before opening the screen.
+    compileOnly fg.deobf('cloth:cloth-config:11.1.136-forge')
+
+    // SCG Extra (optional at runtime, compile only). Faction integration.
+    // Not bundled; the FactionPlayerToggleMixin target is missing without scgextra (mixin just warns and skips).
+    compileOnly fg.deobf('scgextra:scgextra-forge:3.1.1')
+
+    // ============================================================
+    // YSM 兼容内容已撤销（2026-09-12）。
+    //
+    // 原尝试：让 YSM 模型在手持 SC2 枪时播放模型自带的 tac:* 动画。
+    // 结论：附属 mod 层面无法完成。根因是 YSM 的持枪姿势通道
+    //   TACZCompat.playGunHoldAnimation 第一句 IGun.getIGunOrNull(stack)
+    //   对 SC2 枪返回 null 后立即 return PlayState.STOP，
+    //   而 STOP 是非 null，导致 MainhandPredicate 提前返回，
+    //   后续声明式通道 ConditionalHold 也不会执行。
+    //   该结构在外层类上，虽可注入，但需要自行复刻整套状态判定与降级规则，
+    //   风险与收益不成比例，故不做。
+    //
+    // 完整分析与修复方案见 docs/YSM_ROOT_CAUSE_AND_FIX.md 与 docs/YSM_COMPAT_SUMMARY.md。
+    // 备份位于 E:\mod\SCG2_TLM_backup_20260912_214747（含全部 YSM 相关代码）。
+    // ============================================================
 
     // Mixin annotation processor
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
@@ -229,7 +260,7 @@ tasks.withType(JavaCompile).configureEach {
 task copyToMods(type: Copy) {
     dependsOn 'reobfJar'
     from jar.archiveFile
-    into 'D:\\MCJAVA\\.minecraft\\versions\\1.20.1-Forge_47.4.20\\mods'
+    into 'D:\\MCJAVA\\.minecraft\\versions\\1.20.1-Forge_47.4.21\\mods'
 }
 
 build.finalizedBy copyToMods

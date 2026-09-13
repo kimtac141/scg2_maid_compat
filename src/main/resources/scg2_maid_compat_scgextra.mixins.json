@@ -1,0 +1,10 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "com.scg2tlm.elmomod.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "scg2_maid_compat.refmap.json",
+  "mixins": [
+    "FactionPlayerToggleMixin"
+  ]
+}

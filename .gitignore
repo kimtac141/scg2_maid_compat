@@ -34,3 +34,9 @@ Thumbs.db
 
 # VS Code
 .vscode/
+
+# local scratch (do not commit)
+nul
+build_*.txt
+backup_*/
+temp_*/

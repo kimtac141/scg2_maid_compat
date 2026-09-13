@@ -1,0 +1,32 @@
+{
+  "criteria": {
+    "maid_event": {
+      "conditions": {
+        "event": "scg2_laser_musket_100_illager"
+      },
+      "trigger": "touhou_little_maid:maid/tamed_maid"
+    }
+  },
+  "display": {
+    "announce_to_chat": true,
+    "description": {
+      "translate": "advancements.scg2_maid_compat.scg2_laser_musket_100_illager.description"
+    },
+    "frame": "challenge",
+    "hidden": true,
+    "icon": {
+      "item": "scguns:laser_musket"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.scg2_maid_compat.scg2_laser_musket_100_illager.title"
+    }
+  },
+  "parent": "scg2_maid_compat:scg2_kill_mob",
+  "requirements": [
+    [
+      "maid_event"
+    ]
+  ],
+  "sends_telemetry_event": true
+}
