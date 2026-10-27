@@ -19,11 +19,11 @@ import net.minecraft.world.item.ItemStack;
 import top.ribs.scguns.item.GunItem;
 import org.apache.commons.lang3.StringUtils;
 import org.spongepowered.asm.mixin.Mixin;
-
-import java.util.Map;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.Map;
 
 @Mixin(TacCompat.class)
 public class TacCompatMixin {
@@ -35,14 +35,11 @@ public class TacCompatMixin {
         if (modelIdStr == null || !modelIdStr.contains(":")) return false;
         ResourceLocation modelId = ResourceLocation.tryParse(modelIdStr);
         if (modelId == null) return false;
-
         if (ConditionManager.getTAC(modelId) != null) return true;
 
         String ns = modelId.getNamespace();
         String path = modelId.getPath();
         Map<ResourceLocation, AnimationFile> allAnims = GeckoLibCache.getInstance().getAnimations();
-
-        // Try multiple possible animation file path patterns
         String[] possiblePaths = {
                 ns + ":animation/" + path + ".animation.json",
                 ns + ":animations/" + path + ".animation.json",
@@ -54,18 +51,13 @@ public class TacCompatMixin {
             if (loc == null) continue;
             if (ConditionManager.getTAC(loc) != null) return true;
             AnimationFile af = allAnims.get(loc);
-            if (af != null && af.animations().keySet().stream().anyMatch(k -> k.startsWith("tac:"))) {
-                return true;
-            }
+            if (af != null && af.animations().keySet().stream().anyMatch(k -> k.startsWith("tac:"))) return true;
         }
-
         if (allAnims == null) return false;
         for (Map.Entry<ResourceLocation, AnimationFile> entry : allAnims.entrySet()) {
             if (entry.getKey().getNamespace().equals(ns)
                     && entry.getKey().getPath().contains(path)
-                    && entry.getValue().animations().keySet().stream().anyMatch(k -> k.startsWith("tac:"))) {
-                return true;
-            }
+                    && entry.getValue().animations().keySet().stream().anyMatch(k -> k.startsWith("tac:"))) return true;
         }
         return false;
     }
@@ -88,9 +80,7 @@ public class TacCompatMixin {
             } else {
                 id = SC2GunCompat.getGunId(stack);
             }
-            if (id != null) {
-                cir.setReturnValue(id);
-            }
+            if (id != null) cir.setReturnValue(id);
         }
     }
 
@@ -99,26 +89,13 @@ public class TacCompatMixin {
         if (maid == null) return;
         ItemStack stack = maid.asEntity().getMainHandItem();
         if (!SC2GunCompat.isSC2Gun(stack) || !(stack.getItem() instanceof GunItem)) return;
-
-        if (hasCustomTacAnim(maid)) {
-            cir.setReturnValue(false);
-            return;
-        }
-
+        if (hasCustomTacAnim(maid)) { cir.setReturnValue(false); return; }
         boolean isTwoHanded = "rifle".equals(SC2GunCompat.getAnimationGunType(stack));
         if (armLeft != null) {
-            if (isTwoHanded) {
-                armLeft.setRotateAngleX(-1.75f);
-                armLeft.setRotateAngleY(0.5f);
-            } else {
-                armLeft.setRotateAngleX(-0.3f);
-                armLeft.setRotateAngleY(0.3f);
-            }
+            if (isTwoHanded) { armLeft.setRotateAngleX(-1.75f); armLeft.setRotateAngleY(0.5f); }
+            else { armLeft.setRotateAngleX(-0.3f); armLeft.setRotateAngleY(0.3f); }
         }
-        if (armRight != null) {
-            armRight.setRotateAngleX(-1.65f);
-            armRight.setRotateAngleY(-0.174f);
-        }
+        if (armRight != null) { armRight.setRotateAngleX(-1.65f); armRight.setRotateAngleY(-0.174f); }
         cir.setReturnValue(true);
     }
 
@@ -128,94 +105,52 @@ public class TacCompatMixin {
         Mob entity = maid.asEntity();
         ItemStack stack = entity.getMainHandItem();
         if (!SC2GunCompat.isSC2Gun(stack) || !(stack.getItem() instanceof GunItem)) return;
-        if (entity.isSleeping() || entity instanceof EntityMaid maidEntity && (maidEntity.isMaidInSittingPose() || entity.isPassenger())) {
-            return;
-        }
-        // Models with custom tac:* animations (winefox/GF2) have their own
-        // tac:walk/tac:idle for gun-holding lower body stance — let original run.
-        // Models without: STOP prevents default tac:walk from conflicting with hold controller.
-        if (!hasCustomTacAnim(maid)) {
-            cir.setReturnValue(PlayState.STOP);
-        }
+        if (entity.isSleeping() || entity instanceof EntityMaid maidEntity && (maidEntity.isMaidInSittingPose() || entity.isPassenger())) return;
+        if (!hasCustomTacAnim(maid)) cir.setReturnValue(PlayState.STOP);
     }
 
     @Inject(method = "playGunHoldAnimation", at = @At("HEAD"), cancellable = true, remap = false)
     private static void onPlayGunHoldAnimation(ItemStack mainHandItem, AnimationEvent<GeckoMaidEntity<?>> event, CallbackInfoReturnable<PlayState> cir) {
         if (!SC2GunCompat.isSC2Gun(mainHandItem) || !(mainHandItem.getItem() instanceof GunItem)) return;
-
         GeckoMaidEntity<?> animatable = event.getAnimatableEntity();
         IMaid maid = animatable.getMaid();
-        if (maid == null) {
-            cir.setReturnValue(PlayState.STOP);
-            return;
-        }
-
+        if (maid == null) { cir.setReturnValue(PlayState.STOP); return; }
         Mob entity = maid.asEntity();
-
         String animType = SC2GunCompat.getAnimationGunType(mainHandItem);
-
-        boolean isReloading = mainHandItem.getTag() != null && mainHandItem.getTag().contains("scg2tlm:reloading");
+        boolean isReloading = SC2GunCompat.getTag(mainHandItem) != null && SC2GunCompat.getTag(mainHandItem).contains("scg2tlm:reloading");
         if (isReloading && !SC2GunCompat.isMinigunGun(mainHandItem)) {
-            playGunAnim(event, animatable, mainHandItem, animType, "tac:reload:");
-            cir.setReturnValue(PlayState.CONTINUE);
+            if (playGunAnim(event, animatable, mainHandItem, animType, "tac:reload:")) cir.setReturnValue(PlayState.CONTINUE);
             return;
         }
-
-        if (entity.isSleeping() || entity.isPassenger() || entity.isSwimming()) {
-            return;
-        }
-
-        if (entity.onGround() && entity.isSprinting()) {
-            playGunAnim(event, animatable, mainHandItem, animType, "tac:run:");
-            cir.setReturnValue(PlayState.CONTINUE);
-            return;
-        }
-
-        if (entity.swinging) {
-            playGunAnim(event, animatable, mainHandItem, animType, "tac:hold:fire:");
-            cir.setReturnValue(PlayState.CONTINUE);
-            return;
-        }
-
-        if (entity.onGround() && entity.getTarget() != null) {
-            playGunAnim(event, animatable, mainHandItem, animType, "tac:aim:");
-            cir.setReturnValue(PlayState.CONTINUE);
-            return;
-        }
-
-        playGunAnim(event, animatable, mainHandItem, animType, "tac:hold:");
-        cir.setReturnValue(PlayState.CONTINUE);
+        if (entity.isSleeping() || entity.isSwimming()) return;
+        if (entity.onGround() && entity.isSprinting()) { if (playGunAnim(event, animatable, mainHandItem, animType, "tac:run:")) cir.setReturnValue(PlayState.CONTINUE); return; }
+        if (entity.swinging) { if (playGunAnim(event, animatable, mainHandItem, animType, "tac:hold:fire:")) cir.setReturnValue(PlayState.CONTINUE); return; }
+        if (entity.onGround() && (entity.getTarget() != null || maid.isSwingingArms())) { if (playGunAnim(event, animatable, mainHandItem, animType, "tac:aim:")) cir.setReturnValue(PlayState.CONTINUE); return; }
+        if (playGunAnim(event, animatable, mainHandItem, animType, "tac:hold:")) cir.setReturnValue(PlayState.CONTINUE);
     }
 
-    private static void playGunAnim(AnimationEvent<GeckoMaidEntity<?>> event, GeckoMaidEntity<?> animatable, ItemStack stack, String animType, String prefix) {
+    private static boolean playGunAnim(AnimationEvent<GeckoMaidEntity<?>> event, GeckoMaidEntity<?> animatable, ItemStack stack, String animType, String prefix) {
         ResourceLocation modelId = animatable.getAnimationFileLocation();
         AnimationFile animationFile = GeckoLibCache.getInstance().getAnimations().get(modelId);
-
         String fullName = prefix + animType;
         if (prefix.equals("tac:reload:") && (animationFile == null || !animationFile.animations().containsKey(fullName))) {
-            fullName = "tac:hold:" + animType;
-            prefix = "tac:hold:";
+            fullName = "tac:hold:" + animType; prefix = "tac:hold:";
         }
-
         ILoopType loopType = ILoopType.EDefaultLoopTypes.LOOP;
-
         ConditionTAC conditionTAC = ConditionManager.getTAC(modelId);
         if (conditionTAC != null) {
             String name = conditionTAC.doTest(stack, prefix);
-            if (StringUtils.isNoneBlank(name)) {
-                SC2GunCompat.setAnimOnce(event.getController(), name, loopType);
-                return;
-            }
+            if (StringUtils.isNoneBlank(name)) { SC2GunCompat.setAnimOnce(event.getController(), name, loopType); return true; }
         }
-
         if (SC2GunCompat.isMinigunGun(stack)) {
             String minigunName = prefix.substring(0, prefix.length() - 1) + "$tacz:minigun";
-            if (animationFile != null && animationFile.animations().containsKey(minigunName)) {
-                SC2GunCompat.setAnimOnce(event.getController(), minigunName, loopType);
-                return;
-            }
+            if (animationFile != null && animationFile.animations().containsKey(minigunName)) { SC2GunCompat.setAnimOnce(event.getController(), minigunName, loopType); return true; }
         }
-
+        if (animationFile != null && !animationFile.animations().containsKey(fullName) && prefix.equals("tac:aim:")) {
+            fullName = "tac:hold:" + animType;
+        }
+        if (animationFile != null && !animationFile.animations().containsKey(fullName)) return false;
         SC2GunCompat.setAnimOnce(event.getController(), fullName, loopType);
+        return true;
     }
 }

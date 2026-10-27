@@ -313,7 +313,7 @@ public class MedicHealTask extends Behavior<EntityMaid> {
                     LAST_HEAL.put(maid, gameTime);
                     // 开火音效 + 开火动画（这两样原来都没有：fireHealingShot 直接调 AIGunEvent，
                     // 绕过了 SC2GunCompat.performGunAttack 里的音效，动画状态也没上报）
-                    SC2GunCompat.playGunFireSound(maid, gun);
+                    // 開火音は SC2GunCompat.performGunAttack 内で再生される
                     FIRE_ANIM_TICKS.put(maid, FIRE_ANIM_DURATION);
                     syncAnimFlags(maid, false, true);
                     // 自疗时给一句「给自己来一针」的气泡（枪这一路是瞬间结算，所以直接播完成语）
@@ -490,7 +490,6 @@ public class MedicHealTask extends Behavior<EntityMaid> {
             // 倒计时结束 → 真正装填
             SC2GunCompat.reloadFromInventory(maid, gun);
             RELOAD_TIMER.remove(maid);
-            gun.getOrCreateTag().remove("scg2tlm:reloading");
             syncAnimFlags(maid, false, FIRE_ANIM_TICKS.containsKey(maid));
             // 换弹完成音效：用配置的 reload_end_sound（默认 scguns:item.reload_end.reload_end）
             SC2GunCompat.playReloadEndSound(maid, gun);
@@ -506,7 +505,6 @@ public class MedicHealTask extends Behavior<EntityMaid> {
         SC2GunCompat.playReloadSound(maid, gun);
         int reloadTime = SC2GunCompat.getReloadTime(gun);
         RELOAD_TIMER.put(maid, reloadTime);
-        gun.getOrCreateTag().putInt("scg2tlm:reloading", reloadTime);
         syncAnimFlags(maid, true, FIRE_ANIM_TICKS.containsKey(maid));
         return true;
     }

@@ -1,32 +1,19 @@
 {
+  "display": {
+    "icon": {"item": "scguns:minigun"},
+    "title": {"translate": "advancements.scg2_maid_compat.scg2_kill_1000.title"},
+    "description": {"translate": "advancements.scg2_maid_compat.scg2_kill_1000.description"},
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
   "criteria": {
-    "maid_event": {
+    "requirement": {
+      "trigger": "touhou_little_maid:maid_event",
       "conditions": {
         "event": "scg2_kill_1000"
-      },
-      "trigger": "touhou_little_maid:maid/tamed_maid"
+      }
     }
-  },
-  "display": {
-    "announce_to_chat": true,
-    "description": {
-      "translate": "advancements.scg2_maid_compat.scg2_kill_1000.description"
-    },
-    "frame": "challenge",
-    "hidden": true,
-    "icon": {
-      "item": "scguns:gun_parts"
-    },
-    "show_toast": true,
-    "title": {
-      "translate": "advancements.scg2_maid_compat.scg2_kill_1000.title"
-    }
-  },
-  "parent": "scg2_maid_compat:scg2_kill_mob",
-  "requirements": [
-    [
-      "maid_event"
-    ]
-  ],
-  "sends_telemetry_event": true
+  }
 }

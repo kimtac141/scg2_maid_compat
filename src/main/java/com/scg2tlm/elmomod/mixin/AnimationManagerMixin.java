@@ -13,6 +13,7 @@ import com.github.tartaricacid.touhoulittlemaid.geckolib3.core.event.predicate.A
 import com.github.tartaricacid.touhoulittlemaid.geckolib3.file.AnimationFile;
 import com.github.tartaricacid.touhoulittlemaid.geckolib3.resource.GeckoLibCache;
 import com.scg2tlm.elmomod.compat.SC2GunCompat;
+import com.scg2tlm.elmomod.mixin.EntityMaidTaskDataInvoker;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Mob;
@@ -27,30 +28,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(AnimationManager.class)
 public class AnimationManagerMixin {
 
-    @Inject(method = "predicateUse", at = @At("HEAD"), cancellable = true, remap = false)
-    private void onPredicateUse(AnimationEvent<GeckoMaidEntity<?>> event, CallbackInfoReturnable<PlayState> cir) {
-        GeckoMaidEntity<?> animatable = event.getAnimatableEntity();
-        if (animatable == null) return;
-        IMaid maid = animatable.getMaid();
-        if (maid == null) return;
-        if (maid.asEntity().isUsingItem() && maid.asEntity().getUseItem().getItem() instanceof GunItem) {
-            cir.setReturnValue(PlayState.STOP);
-        }
-    }
-
     @Inject(method = "predicateMain", at = @At("HEAD"), cancellable = true, remap = false)
     private void onPredicateMain(AnimationEvent<GeckoMaidEntity<?>> event, CallbackInfoReturnable<PlayState> cir) {
         GeckoMaidEntity<?> animatable = event.getAnimatableEntity();
         if (animatable == null) return;
         IMaid maid = animatable.getMaid();
         if (maid == null) return;
+        ItemStack stack = maid.asEntity().getMainHandItem();
+        if (!(SC2GunCompat.isSC2Gun(stack) && stack.getItem() instanceof GunItem)) return;
+
         Mob entity = maid.asEntity();
-        if (entity == null) return;
-
-        ItemStack stack = entity.getMainHandItem();
-        if (!SC2GunCompat.isSC2Gun(stack) || !(stack.getItem() instanceof GunItem)) return;
-
-        if (entity.isSleeping() || (entity instanceof EntityMaid maidEntity && maidEntity.isMaidInSittingPose()) || entity.isPassenger() || entity.isSwimming()) {
+        if (entity.isSleeping() || ((EntityMaid) entity).isMaidInSittingPose() || entity.isPassenger() || entity.isSwimming()) {
             return;
         }
 
@@ -66,6 +54,31 @@ public class AnimationManagerMixin {
         }
     }
 
+    @Inject(method = "predicateSwing", at = @At("HEAD"), cancellable = true, remap = false)
+    private void onPredicateSwing(AnimationEvent<GeckoMaidEntity<?>> event, CallbackInfoReturnable<PlayState> cir) {
+        GeckoMaidEntity<?> animatable = event.getAnimatableEntity();
+        if (animatable == null) return;
+        IMaid maid = animatable.getMaid();
+        if (maid == null) return;
+        if (maid.asEntity().swinging) {
+            ItemStack stack = maid.asEntity().getMainHandItem();
+            if (SC2GunCompat.isSC2Gun(stack) && stack.getItem() instanceof GunItem) {
+                cir.setReturnValue(PlayState.STOP);
+            }
+        }
+    }
+
+    @Inject(method = "predicateUse", at = @At("HEAD"), cancellable = true, remap = false)
+    private void onPredicateUse(AnimationEvent<GeckoMaidEntity<?>> event, CallbackInfoReturnable<PlayState> cir) {
+        GeckoMaidEntity<?> animatable = event.getAnimatableEntity();
+        if (animatable == null) return;
+        IMaid maid = animatable.getMaid();
+        if (maid == null) return;
+        if (maid.asEntity().isUsingItem() && maid.asEntity().getUseItem().getItem() instanceof GunItem) {
+            cir.setReturnValue(PlayState.STOP);
+        }
+    }
+
     @Inject(method = "predicateMainhandHold", at = @At("HEAD"), cancellable = true, remap = false)
     private void onPredicateMainhandHold(AnimationEvent<GeckoMaidEntity<?>> event, CallbackInfoReturnable<PlayState> cir) {
         GeckoMaidEntity<?> animatable = event.getAnimatableEntity();
@@ -76,24 +89,17 @@ public class AnimationManagerMixin {
         Mob entity = maid.asEntity();
         ItemStack stack = entity.getMainHandItem();
 
-        if (!SC2GunCompat.isSC2Gun(stack) || !(stack.getItem() instanceof GunItem)) return;
+        if (!(SC2GunCompat.isSC2Gun(stack) && stack.getItem() instanceof GunItem)) return;
+        if (((EntityMaid) entity).isMaidInSittingPose()) return;
 
         String animType = SC2GunCompat.getAnimationGunType(stack);
         boolean isInCombat = ((EntityMaid) entity).isSwingingArms();
+        boolean isFiring = entity.swinging && entity.swingTime > 0;
 
-        boolean isFiring = false;
-        boolean isReloading = false;
-        boolean isMelee = false;
-        if (entity instanceof EntityMaid maidEntity) {
-            CompoundTag syncData = ((EntityMaidTaskDataInvoker) maidEntity).invokeGetSyncTaskData();
-            if (syncData != null) {
-                isFiring = syncData.getBoolean("scg2tlm:firing");
-                isReloading = syncData.getBoolean("scg2tlm:reloading");
-                isMelee = syncData.getBoolean("scg2tlm:melee");
-            }
-        }
+        CompoundTag taskData = ((EntityMaidTaskDataInvoker) entity).invokeGetSyncTaskData();
+        boolean isReloading = taskData.getBoolean("scg2tlm:reloading");
 
-        if (entity.isSleeping() || entity.isPassenger() || entity.isSwimming()) {
+        if (entity.isSwimming()) {
             return;
         }
 
@@ -107,14 +113,8 @@ public class AnimationManagerMixin {
             if (animationFile == null || !animationFile.animations().containsKey(reloadAnim)) {
                 prefix = "tac:hold:";
             }
-        } else if (isMelee) {
-            prefix = "tac:melee:";
-            String meleeAnim = prefix + animType;
-            if (animationFile == null || !animationFile.animations().containsKey(meleeAnim)) {
-                prefix = "tac:hold:";
-            }
         } else if (isFiring) {
-            prefix = isInCombat ? "tac:aim:fire:" : "tac:hold:fire:";
+            prefix = "tac:hold:fire:";
         } else if (entity.onGround() && entity.isSprinting()) {
             prefix = "tac:run:";
         } else if (entity.onGround() && isInCombat && !isFiring) {
@@ -145,6 +145,16 @@ public class AnimationManagerMixin {
             }
         }
         animName = prefix + animType;
+        if (animationFile == null || !animationFile.animations().containsKey(animName)) {
+            if (prefix.equals("tac:aim:")) {
+                animName = "tac:hold:" + animType;
+                if (animationFile != null && animationFile.animations().containsKey(animName)) {
+                    SC2GunCompat.setAnimOnce(event.getController(), animName, loopType);
+                    cir.setReturnValue(PlayState.CONTINUE);
+                }
+            }
+            return;
+        }
         SC2GunCompat.setAnimOnce(event.getController(), animName, loopType);
         cir.setReturnValue(PlayState.CONTINUE);
     }

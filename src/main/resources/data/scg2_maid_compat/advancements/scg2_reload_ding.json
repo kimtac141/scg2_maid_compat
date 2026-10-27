@@ -1,32 +1,19 @@
 {
+  "display": {
+    "icon": {"item": "scguns:grandle_og"},
+    "title": {"translate": "advancements.scg2_maid_compat.scg2_reload_ding.title"},
+    "description": {"translate": "advancements.scg2_maid_compat.scg2_reload_ding.description"},
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
   "criteria": {
-    "maid_event": {
+    "requirement": {
+      "trigger": "touhou_little_maid:maid_event",
       "conditions": {
         "event": "scg2_reload_ding"
-      },
-      "trigger": "touhou_little_maid:maid/tamed_maid"
+      }
     }
-  },
-  "display": {
-    "announce_to_chat": true,
-    "description": {
-      "translate": "advancements.scg2_maid_compat.scg2_reload_ding.description"
-    },
-    "frame": "task",
-    "hidden": true,
-    "icon": {
-      "item": "scguns:grandle"
-    },
-    "show_toast": true,
-    "title": {
-      "translate": "advancements.scg2_maid_compat.scg2_reload_ding.title"
-    }
-  },
-  "parent": "scg2_maid_compat:scg2_first_shot",
-  "requirements": [
-    [
-      "maid_event"
-    ]
-  ],
-  "sends_telemetry_event": true
+  }
 }

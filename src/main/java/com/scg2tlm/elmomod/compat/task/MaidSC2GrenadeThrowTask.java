@@ -1,7 +1,6 @@
 package com.scg2tlm.elmomod.compat.task;
 
 import com.scg2tlm.elmomod.compat.SC2GunCompat;
-import com.scg2tlm.elmomod.SCG2TLMConfig;
 import com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid;
 import com.google.common.collect.ImmutableMap;
 import net.minecraft.server.level.ServerLevel;
@@ -17,8 +16,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.ItemHandlerHelper;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.ItemHandlerHelper;
 import top.ribs.scguns.entity.throwable.ThrowableGrenadeEntity;
 import java.util.List;
 
@@ -38,23 +37,23 @@ public class MaidSC2GrenadeThrowTask extends Behavior<EntityMaid> {
 
     @Override
     protected boolean checkExtraStartConditions(ServerLevel level, EntityMaid maid) {
-                if (!SC2GunCompat.isGrenade(maid.getMainHandItem()) && !hasGrenadeInInventory(maid)) return false;
+        if (maid.isMaidInSittingPose()) return false;
+        if (!SC2GunCompat.isGrenade(maid.getMainHandItem()) && !hasGrenadeInInventory(maid)) return false;
         var targetOpt = maid.getBrain().getMemory(MemoryModuleType.ATTACK_TARGET);
         return targetOpt.isPresent() && maid.canSee(targetOpt.get());
     }
 
     @Override
     protected boolean canStillUse(ServerLevel level, EntityMaid maid, long gameTime) {
-                if (SC2GunCompat.isGrenade(maid.getMainHandItem())) {
-            var targetOpt = maid.getBrain().getMemory(MemoryModuleType.ATTACK_TARGET);
-            return targetOpt.isPresent() && maid.canSee(targetOpt.get());
-        }
-        return hasGrenadeInInventory(maid);
+        if (maid.isMaidInSittingPose()) return false;
+        if (!SC2GunCompat.isGrenade(maid.getMainHandItem()) && !hasGrenadeInInventory(maid)) return false;
+        var targetOpt = maid.getBrain().getMemory(MemoryModuleType.ATTACK_TARGET);
+        return targetOpt.isPresent() && targetOpt.get().isAlive();
     }
 
     @Override
     protected void start(ServerLevel level, EntityMaid maid, long gameTime) {
-                maid.setSwingingArms(true);
+        maid.setSwingingArms(true);
         cooldown = 0;
         strafeTime = 0;
         postThrowTimer = 0;
@@ -73,7 +72,7 @@ public class MaidSC2GrenadeThrowTask extends Behavior<EntityMaid> {
 
     @Override
     protected void tick(ServerLevel level, EntityMaid maid, long gameTime) {
-                if (postThrowTimer > 0) {
+        if (postThrowTimer > 0) {
             postThrowTimer--;
             if (postThrowTimer > 0 && fleeFromNearbyGrenades(level, maid)) return;
         }
@@ -93,10 +92,10 @@ public class MaidSC2GrenadeThrowTask extends Behavior<EntityMaid> {
                     double perpZ = strafeClockwise ? dx : -dx;
                     maid.getBrain().setMemory(MemoryModuleType.WALK_TARGET,
                             new WalkTarget(
-                                    BlockPos.containing(
-                                            maid.getX() + perpX / len * 5.0,
-                                            maid.getY(),
-                                            maid.getZ() + perpZ / len * 5.0
+                                    new BlockPos(
+                                            (int) (maid.getX() + perpX / len * 5.0),
+                                            (int) maid.getY(),
+                                            (int) (maid.getZ() + perpZ / len * 5.0)
                                     ), 0.6f, 2));
                 }
             });
@@ -116,8 +115,8 @@ public class MaidSC2GrenadeThrowTask extends Behavior<EntityMaid> {
 
             if (maid.canSee(target)) {
                 SC2GunCompat.performGrenadeThrow(maid, target, grenadeStack);
-                cooldown = SCG2TLMConfig.GRENADE_COOLDOWN.get();
-                postThrowTimer = SCG2TLMConfig.GRENADE_POST_THROW_TIME.get();
+                cooldown = 40;
+                postThrowTimer = 20;
             }
         });
     }
@@ -150,10 +149,10 @@ public class MaidSC2GrenadeThrowTask extends Behavior<EntityMaid> {
             if (len < 0.01) { toGrenadeX = 1.0; toGrenadeZ = 0.0; }
             else { toGrenadeX /= len; toGrenadeZ /= len; }
             maid.getBrain().setMemory(MemoryModuleType.WALK_TARGET,
-                    new WalkTarget(BlockPos.containing(
-                            maid.getX() + toGrenadeX * 5.0,
-                            maid.getY(),
-                            maid.getZ() + toGrenadeZ * 5.0
+                    new WalkTarget(new BlockPos(
+                            (int) (maid.getX() + toGrenadeX * 5.0),
+                            (int) maid.getY(),
+                            (int) (maid.getZ() + toGrenadeZ * 5.0)
                     ), 1.0f, 0));
             return true;
         }
@@ -174,7 +173,6 @@ public class MaidSC2GrenadeThrowTask extends Behavior<EntityMaid> {
             ItemStack slot = inv.getStackInSlot(i);
             if (SC2GunCompat.isGrenade(slot)) {
                 ItemStack taken = inv.extractItem(i, 1, false);
-                if (taken.isEmpty()) continue;
                 ItemStack oldMainHand = maid.getMainHandItem();
                 if (!oldMainHand.isEmpty()) {
                     ItemStack remaining = ItemHandlerHelper.insertItemStacked(inv, oldMainHand, false);

@@ -3,16 +3,16 @@ package com.scg2tlm.elmomod.compat;
 import com.scg2tlm.elmomod.ExampleMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import top.ribs.scguns.item.GunItem;
 
 import java.lang.reflect.Method;
 
-@Mod.EventBusSubscriber(modid = ExampleMod.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = ExampleMod.MODID, value = Dist.CLIENT)
 public class BetterCombatHandler {
     private static final String BC_MOD_ID = "bettercombat";
     private static Boolean hasBC;
@@ -21,9 +21,7 @@ public class BetterCombatHandler {
     private static ItemStack lastMainHand = ItemStack.EMPTY;
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-
+    public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 

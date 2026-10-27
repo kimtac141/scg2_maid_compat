@@ -15,16 +15,15 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import top.ribs.scguns.entity.monster.ZombifiedHornlinEntity;
 import top.ribs.scguns.entity.projectile.ProjectileEntity;
 
-@Mod.EventBusSubscriber(modid = com.scg2tlm.elmomod.ExampleMod.MODID)
+@EventBusSubscriber(modid = com.scg2tlm.elmomod.ExampleMod.MODID)
 public class MaidProjectileHandler {
     private static final String LASER_MUSKET_COUNT_KEY = "scg2tlm:laser_musket_illager_kills";
     private static final int LASER_MUSKET_GOAL = 100;
@@ -34,7 +33,7 @@ public class MaidProjectileHandler {
 
     private static Item getLaserMusketItem() {
         if (laserMusketItem == null) {
-            laserMusketItem = ForgeRegistries.ITEMS.getValue(
+            laserMusketItem = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
                 ResourceLocation.fromNamespaceAndPath("scguns", "laser_musket"));
         }
         return laserMusketItem;
@@ -42,8 +41,6 @@ public class MaidProjectileHandler {
 
     @SubscribeEvent
     public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
-        if (event.getLevel().isClientSide()) return;
-
         if (!(event.getEntity() instanceof ProjectileEntity projectile)) return;
         if (!(projectile.getOwner() instanceof EntityMaid)) return;
         if (!projectile.getPersistentData().contains("AIDamageScale")) return;
@@ -51,7 +48,7 @@ public class MaidProjectileHandler {
     }
 
     @SubscribeEvent
-    public static void onLivingHurt(LivingHurtEvent event) {
+    public static void onLivingIncomingDamage(LivingIncomingDamageEvent event) {
         if (!(event.getSource().getDirectEntity() instanceof ProjectileEntity)) return;
 
         Entity shooter = event.getSource().getEntity();

@@ -16,8 +16,11 @@ public class LightningProjectileEntityMixin {
     @Inject(method = "findNextTarget", at = @At("RETURN"), cancellable = true, remap = false)
     private void scg2tlm$findNextTarget(Entity entity, CallbackInfoReturnable<LivingEntity> cir) {
         LivingEntity result = cir.getReturnValue();
-        if (result instanceof Player && ((LightningProjectileEntity) (Object) this).getOwner() instanceof EntityMaid) {
-            cir.setReturnValue(null);
+        if (result instanceof Player player) {
+            Entity owner = ((LightningProjectileEntity) (Object) this).getOwner();
+            if (owner instanceof EntityMaid maid && player.getUUID().equals(maid.getOwnerUUID())) {
+                cir.setReturnValue(null);
+            }
         }
     }
 }

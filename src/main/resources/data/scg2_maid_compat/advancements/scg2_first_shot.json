@@ -1,32 +1,20 @@
 {
+  "display": {
+    "icon": {"item": "scguns:flintlock_pistol"},
+    "title": {"translate": "advancements.scg2_maid_compat.scg2_first_shot.title"},
+    "description": {"translate": "advancements.scg2_maid_compat.scg2_first_shot.description"},
+    "background": "minecraft:textures/gui/advancements/backgrounds/adventure.png",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
   "criteria": {
-    "maid_event": {
+    "requirement": {
+      "trigger": "touhou_little_maid:maid_event",
       "conditions": {
         "event": "scg2_first_shot"
-      },
-      "trigger": "touhou_little_maid:maid/tamed_maid"
+      }
     }
-  },
-  "display": {
-    "announce_to_chat": true,
-    "background": "touhou_little_maid:textures/advancements/backgrounds/stone.png",
-    "description": {
-      "translate": "advancements.scg2_maid_compat.scg2_first_shot.description"
-    },
-    "frame": "task",
-    "hidden": false,
-    "icon": {
-      "item": "scguns:advanced_round"
-    },
-    "show_toast": true,
-    "title": {
-      "translate": "advancements.scg2_maid_compat.scg2_first_shot.title"
-    }
-  },
-  "requirements": [
-    [
-      "maid_event"
-    ]
-  ],
-  "sends_telemetry_event": true
+  }
 }

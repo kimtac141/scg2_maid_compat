@@ -9,6 +9,7 @@ import com.mojang.datafixers.util.Pair;
 import com.scg2tlm.elmomod.ExampleMod;
 import com.scg2tlm.elmomod.compat.SC2GunCompat;
 import com.scg2tlm.elmomod.compat.SC2HealCompat;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.LivingEntity;
@@ -73,7 +74,7 @@ public class TaskSC2MedicHeal implements IRangedAttackTask {
         ItemStack crusader = SC2HealCompat.stackOf(SC2HealCompat.CRUSADER);
         if (crusader != null) return crusader;
 
-        for (Item item : net.minecraftforge.registries.ForgeRegistries.ITEMS) {
+        for (Item item : BuiltInRegistries.ITEM) {
             if (item instanceof top.ribs.scguns.item.HealingBandageItem) {
                 return item.getDefaultInstance();
             }

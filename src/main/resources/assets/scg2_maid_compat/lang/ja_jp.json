@@ -1,0 +1,17 @@
+{
+  "task.scg2_maid_compat.medic_heal": "衛生兵",
+  "task.scg2_maid_compat.medic_heal.desc": "クルセイダーや治療用包帯で、負傷したご主人様・仲間のメイド・味方を治療する",
+  "task.scg2_maid_compat.medic_heal.condition.has_scg2_medic_item": "クルセイダーまたは医療アイテムを持っている",
+  "task.scg2_maid_compat.medic_heal.condition.has_wounded_friendly": "近くに負傷した味方がいる",
+  "chat_bubble.scg2_maid_compat.heal_use.0": "じっとしてて、包帯を巻きますね~",
+  "chat_bubble.scg2_maid_compat.heal_use.1": "少しだけ我慢してくださいね、すぐ終わります~",
+  "chat_bubble.scg2_maid_compat.heal_use.2": "傷はどこでしょう…?",
+  "chat_bubble.scg2_maid_compat.heal_use.3": "お任せください、丁寧にやりますから~",
+  "chat_bubble.scg2_maid_compat.heal_done.0": "できました!次は気をつけてくださいね~",
+  "chat_bubble.scg2_maid_compat.heal_done.1": "手当て完了~ 少しは楽になりました?",
+  "chat_bubble.scg2_maid_compat.heal_self_use.0": "うぅ…私もかすり傷を…先に手当てしますね。",
+  "chat_bubble.scg2_maid_compat.heal_self_use.1": "ご心配なく、ご主人様。自分で何とかできますから~",
+  "chat_bubble.scg2_maid_compat.heal_self_use.2": "いたた…ちょっとしみる、我慢我慢。",
+  "chat_bubble.scg2_maid_compat.heal_self_done.0": "ふぅ…これでまだ動けます~",
+  "chat_bubble.scg2_maid_compat.heal_self_done.1": "手当て完了。ご主人様を守れますよ~"
+}

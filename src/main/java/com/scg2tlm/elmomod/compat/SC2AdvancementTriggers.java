@@ -21,7 +21,10 @@ public final class SC2AdvancementTriggers {
         if (ownerUuid == null) return;
         ServerPlayer player = server.getPlayerList().getPlayer(ownerUuid);
         if (player != null) {
-            InitTrigger.MAID_EVENT.trigger(player, event);
+            var trigger = InitTrigger.MAID_EVENT.get();
+            if (trigger != null) {
+                trigger.trigger(player, event);
+            }
         }
     }
 
